@@ -1,0 +1,260 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pastebin Mini</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      padding: 40px;
+      width: 100%;
+      max-width: 600px;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 2em;
+    }
+    .subtitle {
+      color: #888;
+      margin-bottom: 30px;
+      font-size: 0.95em;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #333;
+      font-weight: 600;
+      font-size: 0.95em;
+    }
+    textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      resize: vertical;
+      min-height: 250px;
+      transition: border-color 0.2s;
+    }
+    textarea:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    .option-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .option-input {
+      display: flex;
+      flex-direction: column;
+    }
+    input[type="number"] {
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+    input[type="number"]:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    .button-group {
+      display: flex;
+      gap: 10px;
+    }
+    button {
+      flex: 1;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 4px;
+      font-size: 1em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    button.primary {
+      background: #667eea;
+      color: white;
+    }
+    button.primary:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+    button.secondary {
+      background: #f0f0f0;
+      color: #333;
+    }
+    button.secondary:hover {
+      background: #e0e0e0;
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .error {
+      background-color: #fee;
+      border: 1px solid #fcc;
+      color: #c00;
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .error.show {
+      display: block;
+    }
+    .success {
+      background-color: #efe;
+      border: 1px solid #cfc;
+      color: #060;
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .success.show {
+      display: block;
+    }
+    .success a {
+      color: #060;
+      font-weight: 600;
+      word-break: break-all;
+    }
+    .hint {
+      color: #888;
+      font-size: 0.85em;
+      margin-top: 4px;
+    }
+    .loading {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Pastebin Mini</h1>
+    <p class="subtitle">Create a shareable paste with optional expiry and view limits</p>
+    
+    <div class="error" id="errorMsg"></div>
+    <div class="success" id="successMsg"></div>
+    
+    <form id="pasteForm">
+      <div class="form-group">
+        <label for="content">Paste Content *</label>
+        <textarea id="content" name="content" required placeholder="Enter your text here..."></textarea>
+      </div>
+      
+      <div class="option-group">
+        <div class="option-input">
+          <label for="ttl">TTL (seconds)</label>
+          <input type="number" id="ttl" name="ttl" min="1" placeholder="Optional">
+          <div class="hint">Leave empty for no expiry</div>
+        </div>
+        <div class="option-input">
+          <label for="maxViews">Max Views</label>
+          <input type="number" id="maxViews" name="maxViews" min="1" placeholder="Optional">
+          <div class="hint">Leave empty for unlimited</div>
+        </div>
+      </div>
+      
+      <div class="button-group">
+        <button type="submit" class="primary">
+          <span id="submitText">Create Paste</span>
+          <span class="loading" id="submitLoading">Creating...</span>
+        </button>
+        <button type="reset" class="secondary">Clear</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    const form = document.getElementById('pasteForm');
+    const errorMsg = document.getElementById('errorMsg');
+    const successMsg = document.getElementById('successMsg');
+    const submitText = document.getElementById('submitText');
+    const submitLoading = document.getElementById('submitLoading');
+    const submitBtn = form.querySelector('button[type="submit"]');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorMsg.classList.remove('show');
+      successMsg.classList.remove('show');
+
+      const content = document.getElementById('content').value.trim();
+      const ttl = document.getElementById('ttl').value;
+      const maxViews = document.getElementById('maxViews').value;
+
+      if (!content) {
+        showError('Content is required');
+        return;
+      }
+
+      const payload = { content };
+      if (ttl) payload.ttl_seconds = parseInt(ttl, 10);
+      if (maxViews) payload.max_views = parseInt(maxViews, 10);
+
+      submitBtn.disabled = true;
+      submitText.style.display = 'none';
+      submitLoading.style.display = 'inline';
+
+      try {
+        const response = await fetch('/api/pastes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          showError(data.error || 'Failed to create paste');
+          return;
+        }
+
+        form.reset();
+        showSuccess(`Paste created! <br><a href="${data.url}" target="_blank">${data.url}</a>`);
+      } catch (err) {
+        showError('Network error: ' + err.message);
+      } finally {
+        submitBtn.disabled = false;
+        submitText.style.display = 'inline';
+        submitLoading.style.display = 'none';
+      }
+    });
+
+    function showError(msg) {
+      errorMsg.textContent = msg;
+      errorMsg.classList.add('show');
+    }
+
+    function showSuccess(msg) {
+      successMsg.innerHTML = msg;
+      successMsg.classList.add('show');
+    }
+  </script>
+</body>
+</html>
