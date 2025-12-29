@@ -81,6 +81,54 @@ GET /api/pastes/:id
 ```
 Each fetch counts as a view.
 
+### Get Paste Stats
+```
+GET /api/pastes/:id/stats
+```
+Get metadata without counting views.
+**Response (200):**
+```json
+{
+  "id": "uuid",
+  "created_at": "2026-01-01T00:00:00.000Z",
+  "expires_at": "2026-01-02T00:00:00.000Z",
+  "remaining_views": 4,
+  "content_length": 125
+}
+```
+
+### Delete Paste
+```
+DELETE /api/pastes/:id
+```
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Paste deleted"
+}
+```
+
+### List All Pastes (Admin)
+```
+GET /api/admin/pastes?limit=100
+```
+**Response (200):**
+```json
+{
+  "total": 50,
+  "pastes": [
+    {
+      "id": "uuid",
+      "created_at": "2026-01-01T00:00:00.000Z",
+      "expires_at": null,
+      "remaining_views": 5,
+      "content_length": 200
+    }
+  ]
+}
+```
+
 ### View Paste (HTML)
 ```
 GET /p/:id
@@ -127,20 +175,32 @@ curl -X GET http://localhost:3000/api/pastes/some-id \
 
 ### Vercel
 
-1. **Create a Vercel project** from your git repository
-2. **Add environment variable** (if using networked DB):
+1. **Push to GitHub**
+   ```bash
+   git remote add origin https://github.com/your-username/pastebin-mini
+   git push -u origin master
    ```
-   DATABASE_URL=your-database-url
+
+2. **Connect to Vercel**
+   - Go to [vercel.com](https://vercel.com)
+   - Click "New Project"
+   - Select your GitHub repository
+   - Click "Deploy"
+
+3. **Configure Environment (if using networked DB)**
+   - In Vercel project settings, add environment variable:
    ```
-3. **Deploy**: Push to main branch; Vercel auto-deploys
-4. Your app will be live at `https://your-project.vercel.app`
+   DATABASE_URL=your-database-connection-string
+   ```
 
-### Local Deployment Checklist
+Your app will be live at `https://your-project.vercel.app`
 
-- [ ] No hardcoded localhost URLs in code
-- [ ] No secrets committed to repository (.gitignore covers db.sqlite)
-- [ ] Database initializes automatically (no manual migrations)
-- [ ] Server starts with `npm start` without additional setup
+### Other Platforms
+
+For Render, Railway, Heroku, or similar:
+- Ensure `npm start` command is set
+- Configure persistence layer (PostgreSQL, Redis, etc.) via DATABASE_URL env var
+- Update `db.js` to use networked database instead of SQLite
 
 ## License
 

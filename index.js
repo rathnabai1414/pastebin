@@ -3,7 +3,7 @@ const { v4: uuidv4 } = require('uuid');
 const helmet = require('helmet');
 const path = require('path');
 
-const { createPaste, getPasteRaw, fetchPasteWithView, nowMs } = require('./db');
+const { createPaste, getPasteRaw, fetchPasteWithView, deletePaste, listAllPastes, getPasteStats, nowMs } = require('./db');
 
 const app = express();
 app.use(helmet());
@@ -146,6 +146,68 @@ app.get('/p/:id', async (req, res) => {
     console.error('Error viewing paste:', err);
     res.status(500).set('Content-Type', 'text/html; charset=utf-8');
     res.send('<h1>500 Server Error</h1><p>Failed to load paste</p>');
+  }
+});
+
+// Get paste stats (without counting views)
+app.get('/api/pastes/:id/stats', async (req, res) => {
+  const id = req.params.id;
+
+  try {
+    const stats = await getPasteStats(id);
+    if (!stats) {
+      return res.status(404).json({ error: 'paste not found' });
+    }
+
+    res.json({
+      id: stats.id,
+      created_at: new Date(stats.created_at).toISOString(),
+      expires_at: stats.expires_at ? new Date(stats.expires_at).toISOString() : null,
+      remaining_views: stats.remaining_views,
+      content_length: stats.content_length
+    });
+  } catch (err) {
+    console.error('Error fetching paste stats:', err);
+    jsonError(res, 500, 'Failed to fetch paste stats');
+  }
+});
+
+// Delete a paste
+app.delete('/api/pastes/:id', async (req, res) => {
+  const id = req.params.id;
+
+  try {
+    const deleted = await deletePaste(id);
+    if (!deleted) {
+      return res.status(404).json({ error: 'paste not found' });
+    }
+
+    res.json({ success: true, message: 'Paste deleted' });
+  } catch (err) {
+    console.error('Error deleting paste:', err);
+    jsonError(res, 500, 'Failed to delete paste');
+  }
+});
+
+// List all pastes (with optional limit query param)
+app.get('/api/admin/pastes', async (req, res) => {
+  try {
+    const pastes = await listAllPastes();
+    const limit = parseInt(req.query.limit, 10) || 100;
+    
+    res.json({
+      total: pastes.length,
+      pastes: pastes.slice(0, limit).map(p => ({
+        id: p.id,
+        created_at: new Date(p.created_at).toISOString(),
+        expires_at: p.expires_at ? new Date(p.expires_at).toISOString() : null,
+        remaining_views: p.remaining_views,
+        content_length: p.content_length
+      }))
+    });
+  } catch (err) {
+    console.error('Error listing pastes:', err);
+    jsonError(res, 500, 'Failed to list pastes');
   }
 });
 

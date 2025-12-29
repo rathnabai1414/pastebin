@@ -118,10 +118,55 @@ function fetchPasteWithView(id, now) {
   });
 }
 
+// Delete a paste by ID
+function deletePaste(id) {
+  return new Promise((resolve, reject) => {
+    db.run(
+      `DELETE FROM pastes WHERE id = ?`,
+      [id],
+      function(err) {
+        if (err) reject(err);
+        else resolve(this.changes > 0);
+      }
+    );
+  });
+}
+
+// List all pastes (admin/stats endpoint)
+function listAllPastes() {
+  return new Promise((resolve, reject) => {
+    db.all(
+      `SELECT id, created_at, expires_at, remaining_views, LENGTH(content) as content_length FROM pastes ORDER BY created_at DESC`,
+      [],
+      (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows || []);
+      }
+    );
+  });
+}
+
+// Get paste stats without counting views
+function getPasteStats(id) {
+  return new Promise((resolve, reject) => {
+    db.get(
+      `SELECT id, created_at, expires_at, remaining_views, LENGTH(content) as content_length FROM pastes WHERE id = ?`,
+      [id],
+      (err, row) => {
+        if (err) reject(err);
+        else resolve(row || null);
+      }
+    );
+  });
+}
+
 module.exports = {
   db,
   createPaste,
   getPasteRaw,
   fetchPasteWithView,
+  deletePaste,
+  listAllPastes,
+  getPasteStats,
   nowMs
 };

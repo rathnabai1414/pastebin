@@ -1,0 +1,9 @@
+{
+  "buildCommand": "npm install",
+  "outputDirectory": ".",
+  "framework": "express",
+  "nodeVersion": "18.x",
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
