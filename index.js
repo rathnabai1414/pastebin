@@ -96,7 +96,7 @@ function escapeHtml(str) {
 }
 
 // View paste as HTML
-app.get('/p/:id', async (req, res) => {
+app.get('/api/pastes/:id', async (req, res) => {
   try {
     const result = await fetchPasteWithView(req.params.id, nowMs(req));
 
